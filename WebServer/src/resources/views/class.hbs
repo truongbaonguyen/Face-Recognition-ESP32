@@ -1,0 +1,157 @@
+<div class="row">
+  {{!-- <div class="col-3">
+    <button type="button" class="btn btn-outline-success"><i
+        class="fa fa-plus mr-3"
+      ></i> Create class</button>
+  </div> --}}
+  <div class="input-group mb-3">
+  <input id = 'idStudentInput' type="text" class="form-control" placeholder="student id" aria-label="Recipient's username" aria-describedby="basic-addon2">
+  <div class="input-group-append">
+    <button id='addStudentBtn' class="btn btn-outline-secondary" type="button">Add student</button>
+  </div>
+</div>
+</div>
+<div class="row">
+  <table class="table">
+    <thead>
+      <tr>
+        <th scope="col">IdStudent</th>
+        <th scope="col">Count</th>
+        <th scope="col">See in detail</th>
+      </tr>
+    </thead>
+    <tbody id = 'bodyTable'>
+    </tbody>
+  </table>
+</div>
+
+<!-- Modal -->
+<div class="modal fade" id="detailModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalCenterTitle"
+    aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="title-modal-in-detail"></h5>
+            </div>
+            <div class="modal-body" id="body-modal-in-detail" >
+                ...
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    var idClass = ''
+    var checks = []
+    var students = []
+    $(document).ready(function () {
+        getIdClass();
+        getStudents();
+        getChecks();
+        $('#addStudentBtn').click(addStudent);
+    })
+    function getIdClass() {
+        let url = window.location.href;
+        let urlArr = url.split('/');
+        idClass = urlArr[urlArr.length - 1];
+    }
+
+    function getStudents() {
+        $.ajax({
+            url: "/classes?idClass=" + idClass,
+            type: "GET",
+            contentType: "application/json;charset=utf-8",
+            dataType: "json",
+            success: function (result) {
+                students = []
+                result.currentClass.students.forEach(item => {
+                    let student = {
+                        id: item,
+                        count: 0,
+                    }
+                    students.push(student)
+                })
+            },
+            error: function (errormessage) {
+                alert(errormessage.responseText);
+            },
+            complete: function () {
+            }
+        });
+    }
+
+    function getChecks() {
+        $.ajax({
+            url: "/check?idClass=" + idClass,
+            type: "GET",
+            contentType: "application/json;charset=utf-8",
+            dataType: "json",
+            success: function (result) {
+                checks = []
+                checks = result.checks;
+            },
+            error: function (errormessage) {
+                alert(errormessage.responseText);
+            },
+            complete: function () {
+                setStudents();
+                renderChecks();
+                $('.showDetail').click((e) => {
+                    let idStudent = e.target.getAttribute('data-id');
+                    $('#title-modal-in-detail').html(idStudent);
+
+                    let checkOne = checks.filter(item=> idStudent == item.id);
+                    let HTML='';
+                    checkOne.forEach(item => {
+                        let tmpHTML = '<li>'+ item.time.date + '-' + item.time.month + '-' + item.time.year +'</li>';
+                        HTML+=tmpHTML;
+                    })
+                    $('#body-modal-in-detail').html(HTML);
+                })
+            }
+        });
+    }
+
+    function setStudents() {
+        students = students.map(item => {
+            let count = checks.filter(ele => ele.id == item.id);
+            count = count.length;
+            item.count = count;
+            return item;
+        })
+    }
+
+    function renderChecks() {
+        let HTML = '';
+        students.forEach(item => {
+            let itemHTML = '<tr><td>' + item.id + '</td><td>' + item.count + '<td><button type="button" data-toggle="modal" data-target="#detailModal" data-id="' + item.id + '" class="btn btn-outline-success showDetail"><i data-id="' + item.id + '"class="fas fa-search"></i></button></td>';
+            HTML += itemHTML;
+            
+        })
+        $('#bodyTable').html(HTML);
+    }
+
+    function addStudent(){
+        let id = $('#idStudentInput').val();
+        let data = {
+            "idClass": idClass,
+            "idStudent": id
+        }
+        $.ajax({  
+        url: "/classes/students",  
+        data: JSON.stringify(data),  
+        type: "PUT",
+        contentType: "application/json;charset=utf-8",  
+        dataType: "json",  
+        success: function (result) {  
+           getStudents();
+           getChecks();
+           $('#idStudentInput').val('');
+           console.log(students);
+        },  
+        error: function (errormessage) {  
+            alert(errormessage.responseText);  
+        }  
+    });
+    }
+</script>

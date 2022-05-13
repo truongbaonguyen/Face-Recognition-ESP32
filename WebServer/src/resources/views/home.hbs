@@ -1,0 +1,152 @@
+<div class="row">
+  <div class="col">
+    <div class="input-group mb-3">
+      <select class="form-select" id="dayPicker">
+        <option value="0">Sun</option>
+        <option value="1">Mon</option>
+        <option value="2">Tue</option>
+        <option value="3">Wed</option>
+        <option value="4">Thu</option>
+        <option value="5">Fri</option>
+        <option value="6">Sat</option>
+      </select>
+    </div>
+  </div>
+  <div class="col">
+    <select class="form-select" name="" id="classPicker">
+    </select>
+  </div>
+  <div class="col">
+    <input type="date" id="datePicker" class="p-1" name="" value="">
+  </div>
+  <div class="col">
+    <button type="button" class="btn btn-outline-success" id="searchBtn"><i class="fas fa-search"></i></button>
+  </div>
+  <div class="col">
+    <button class="btn btn-outline-secondary" type="button" id="statisticsBtn">Statistics</button>
+  </div>
+</div>
+
+<div class="row">
+  <table class="table">
+    <thead>
+      <tr>
+        <th scope="col">IdStudent</th>
+        <th scope="col">Count</th>
+      </tr>
+    </thead>
+    <tbody id = 'bodyTable'>
+    </tbody>
+  </table>
+</div>
+
+<script>
+  var classes = [];
+  var checks = [];
+  var currentClass = {};
+
+  $(document).ready(function () {
+    setToDate();
+    setDay();
+    getClasses();
+    $('#dayPicker').change(() => {
+      let day = $('#dayPicker').val();
+      renderClassPicker(day);
+    })
+
+    $('#searchBtn').click(search);
+    $('#statisticsBtn').click(() => {
+      let currentClass = $('#classPicker').val();
+      window.open(window.location.href + 'classes/' + currentClass);
+    });
+  })
+
+  function setToDate() {
+    let toDay = new Date();
+    let month = toDay.getMonth() + 1;
+    if (month < 10) month = '0' + month;
+
+    let date = toDay.getDate();
+    if (date < 10) date = '0' + date;
+    const toDayHTML = toDay.getFullYear() + '-' + month + '-' + date;
+    $('#datePicker').val(toDayHTML);
+
+  }
+
+  function setDay() {
+    let toDay = new Date();
+    $('#dayPicker').val(toDay.getDay());
+  }
+
+  function getClasses() {
+    $.ajax({
+      url: "/classes",
+      type: "GET",
+      contentType: "application/json;charset=utf-8",
+      dataType: "json",
+      success: function (result) {
+        classes = result.classes;
+        renderClassPicker(new Date().getDay());
+      },
+      error: function (errormessage) {
+        alert(errormessage.responseText);
+      },
+      complete: function () {
+      }
+    });
+  }
+
+  function renderClassPicker(day) {
+    let HTML = '';
+    classes.forEach(item => {
+      let itemHTML = '<option value="' + item.id + '">' + item.id + '</option>';
+      let times = item.times;
+      times.forEach(time => {
+        if (time.day == day)
+          HTML += itemHTML;
+      })
+    })
+    $('#classPicker').html(HTML);
+  }
+
+  function search() {
+    let idClass = $('#classPicker').val();
+    let currentTime = $('#datePicker').val();
+    currentTime = currentTime.split('-');
+    let date = currentTime[2];
+    let month = currentTime[1];
+    let year = currentTime[0];
+    let data = { idClass, date, month, year };
+
+    currentClass = classes.find(item => item.id == $('#classPicker').val());
+    console.log(currentClass);
+
+    $.ajax({
+      url: "/check",
+      type: "GET",
+      data: data,
+      contentType: "application/json;charset=utf-8",
+      dataType: "json",
+      success: function (result) {
+        checks = result.newChecks;
+        renderChecks();
+      },
+      error: function (errormessage) {
+        alert(errormessage.responseText);
+      },
+      complete: function () {
+
+      }
+    });
+  }
+
+  function renderChecks() {
+    let HTML = '';
+    checks.forEach(item => {
+      let itemHTML = '<tr><td>' + item.id + '</td><td>' + item.time.hours + ':' + item.time.minutes + '</td></tr>';
+      HTML += itemHTML;
+    })
+    HTML += '<tr><th>' + checks.length + '/' + currentClass.students.length + '</th></tr>';
+    $('#bodyTable').html(HTML);
+  }
+</script>

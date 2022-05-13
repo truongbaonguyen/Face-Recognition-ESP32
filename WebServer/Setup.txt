@@ -1,0 +1,4 @@
+NodeJS
+npm install -g http-server
+MongoDB
+Thunder Client - Extension VSCode

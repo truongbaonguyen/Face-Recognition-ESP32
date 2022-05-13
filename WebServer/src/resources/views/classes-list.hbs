@@ -1,0 +1,218 @@
+<div class="row">
+    {{!-- <div class="col">
+        <div class="input-group mb-3">
+            <input id = 'inputClassId' type="text" class="form-control" placeholder="class id" aria-label="Recipient's username" aria-describedby="basic-addon2">
+        </div>
+    </div> --}}
+    {{!-- <div class="col">
+        <div class="input-group mb-3">
+            <select class="form-select" id="daySelector">
+                <option value="0">Sun</option>
+                <option value="1">Mon</option>
+                <option value="2">Tue</option>
+                <option value="3">Wed</option>
+                <option value="4">Thu</option>
+                <option value="5">Fri</option>
+                <option value="6">Sat</option>
+            </select>
+        </div>  
+    </div> --}}
+    {{!-- <div class="col">
+        <span>start</span>
+        <input id='inputStartTime' type="time" class="p-1">
+    </div> --}}
+    {{!-- <div class="col">
+        <span>end</span>
+        <input id='inputEndTime' type="time" class="p-1">
+    </div> --}}
+    {{!-- <div class="col">
+        <div class="input-group-append">
+            <button id='addClassBtn' class="btn btn-outline-secondary" type="button">Add class</button>
+        </div>
+    </div> --}}
+</div>
+<div class="row">
+  <table class="table">
+    <thead>
+        <th scope="col">
+            <div class="input-group mb-4">
+                <input id = 'inputClassId' type="text" class="form-control" placeholder="class id" aria-label="Recipient's username" aria-describedby="basic-addon2">
+            </div>
+        </th>
+        <th scope="col">
+            <div class="input-group mb-4">
+                <select class="form-select" id="daySelector">
+                    <option value="0">Sun</option>
+                    <option value="1">Mon</option>
+                    <option value="2">Tue</option>
+                    <option value="3">Wed</option>
+                    <option value="4">Thu</option>
+                    <option value="5">Fri</option>
+                    <option value="6">Sat</option>
+                </select>
+            </div>  
+        </th>
+        <th scope="col">
+            <span>Start</span>
+            <input id='inputStartTime' type="time" class="p-1  mb-4">
+        </th>
+        <th scope="col">
+            <span>End</span>
+            <input id='inputEndTime' type="time" class="p-1  mb-4">
+        </th>
+        <th scope="col">
+            <div class="input-group-append">
+                <button id='addClassBtn' class="btn btn-outline-secondary mb-4" type="button">Add class</button>
+            </div>
+        </th>
+    </thead>
+    <thead>
+      <tr>
+        <th scope="col">Class</th>
+        <th scope="col">Day(s)</th>
+        <th scope="col">Start time</th>
+        <th scope="col">End time</th>
+        <th scope="col">See in details</th>
+      </tr>
+    </thead>
+    <tbody id = 'bodyTable'>
+    </tbody>
+  </table>
+</div>
+
+<script>
+    var classes = [];
+    var classTable = [];
+    $(document).ready(function () {
+        getClasses();
+        $('#addClassBtn').click(addClass);
+    })
+
+    function getClasses() {
+    $.ajax({
+      url: "/classes",
+      type: "GET",
+      contentType: "application/json;charset=utf-8",
+      dataType: "json",
+      success: function (result) {
+        classes = result.classes;
+        generateClasses()
+        showData();
+      },
+      error: function (errormessage) {
+        alert(errormessage.responseText);
+      },
+      complete: function () {
+      }
+    });
+    }
+
+    function generateClasses() {
+        classTable = [];
+        classes.forEach((tempClass) => {
+            tempClass.times.forEach((time, index)=>{
+                let item = {};
+                if (index == 0)
+                {
+                    item.id = tempClass.id;
+                    item.name = tempClass.id;
+                }
+                else
+                {
+                        item.name = '';
+                        item.id = tempClass.id;
+                }
+                        
+                    switch(time.day){
+                        case 0:
+                            item.day = "Sun";
+                            break;
+                        case 1:
+                            item.day = "Mon";
+                            break;
+                        case 2:
+                            item.day = "Tue";
+                            break;
+                        case 3:
+                            item.day = "Wed";
+                            break;
+                        case 4:
+                            item.day = "Thu";
+                            break;
+                        case 5:
+                            item.day = "Fri";
+                            break;
+                        case 6:
+                            item.day = "Sat";
+                            break;
+                    }
+                item.start = time.start.hours + ":" + time.start.minutes;
+                item.end = time.end.hours + ":" + time.end.minutes;
+                classTable.push(item);
+            })
+        })
+    }
+
+    function showData(){
+        let tableBody = $('#bodyTable');
+        let HTML = '';
+        classTable.forEach(item=>{
+            let HTMLTempt =  `
+            <tr>
+                <th scope="row">${item.name}</th>
+                <td>${item.day}</td>
+                <td>${item.start}</td>
+                <td>${item.end}</td>
+                <td><button type="button" class="btn btn-outline-success" onclick="detailsClass('${item.id}')"><i class="fa fa-arrow-right"></i></button></td>
+            </tr>
+            `;
+            HTML+=HTMLTempt;
+        })
+        tableBody.html(HTML);
+    }
+
+    function detailsClass(id) {
+        window.open('/classes/' + id);
+    }
+
+    function addClass(){
+        let classId = $('#inputClassId').val();
+        let day = $('#daySelector').val();
+        let startTime = $('#inputStartTime').val();
+        let startTimeArr = startTime.split(':')
+        let startHour = startTimeArr[0];
+        let startMinute = startTimeArr[1];
+        let endTime = $('#inputEndTime').val().split(':');
+        let endHour = endTime[0];
+        let endMinute = endTime[1];
+        let data = {
+            "id": classId,
+            "times": [
+            {
+                "day": day,
+                "start": {
+                    "hours": startHour,
+                    "minutes": startMinute
+                },
+                "end": {
+                    "hours": endHour,
+                    "minutes": endMinute
+                }
+            }
+            ]
+        }
+        $.ajax({  
+            url: "/classes",  
+            data: JSON.stringify(data),  
+            type: "POST",
+            contentType: "application/json;charset=utf-8",  
+            dataType: "json",  
+            success: function (result) {  
+                getClasses();
+            },  
+            error: function (errormessage) {  
+                alert(errormessage.responseText);  
+            } 
+        })
+    }
+</script>
